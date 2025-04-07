@@ -46,5 +46,19 @@ class Program
         }
         Console.WriteLine($"Process found! PID: {gameProcess.Id}");
         Thread.Sleep(500);
+        
+        // Create MemoryEditor instance
+        MemoryEditor memoryEditor = new MemoryEditor(processHandle);
+        
+        // Find the menu pointer using pattern scanning
+        IntPtr menuPointer = PatternScanner.FindMenuPointer(memoryEditor, gameProcess);
+        if (menuPointer == IntPtr.Zero)
+        {
+            Console.WriteLine("Error: Failed to find memory pattern! Make sure you reach main menu before opening this.");
+            Console.ReadKey();
+            return;
+        }
+        Console.WriteLine($"Menu pointer found at: 0x{menuPointer.ToInt64():X}");
+        
     }
 }
