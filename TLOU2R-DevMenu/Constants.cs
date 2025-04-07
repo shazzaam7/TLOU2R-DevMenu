@@ -12,4 +12,5 @@ public class Constants
     
     // Memory Editor constants
     public const int PROCESS_ALL_ACCESS = 0x1F0FFF;
+    public const int PAGE_EXECUTE_READWRITE = 0x40;
 }
