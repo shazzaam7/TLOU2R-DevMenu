@@ -4,6 +4,43 @@ namespace TLOU2R_DevMenu;
 
 class Program
 {
+    // Variables
+    private static ModToggleHandler _devMenu;
+    private static ModToggleHandler _quickDevMenu;
+    private static bool running = true;
+    
+    // Functions
+    /// <summary>
+    /// Process exit handler that ensures mods are disabled before exit.
+    /// </summary>
+    private static void OnProcessExit(object sender, EventArgs e)
+    {
+        // Revert before closing this
+        
+        // If Dev Menu is enabled, disable it.
+        if (_devMenu != null && _devMenu.IsEnabled)
+        {
+            _devMenu.Toggle();
+            Console.WriteLine("Dev Menu disabled on exit.");
+        }
+        // If Quick Dev Menu is enabled, disable it.
+        if (_quickDevMenu != null && _quickDevMenu.IsEnabled)
+        {
+            _quickDevMenu.Toggle();
+            Console.WriteLine("Quick Menu disabled on exit.");
+        }
+    }
+    
+    /// <summary>
+    /// Cancel key press event handler to gracefully quit on Ctrl+C.
+    /// </summary>
+    private static void OnCancelKeyPress(object sender, ConsoleCancelEventArgs e)
+    {
+        // Cancel the termination to allow for graceful exit.
+        e.Cancel = true;
+        running = false;
+    }
+    
     private static Process GetGameProcess()
     {
         Process gameProcess = null;
@@ -24,6 +61,10 @@ class Program
     
     static void Main(string[] args)
     {
+        // Register process exit event to disable mods before exiting.
+        AppDomain.CurrentDomain.ProcessExit += new EventHandler(OnProcessExit);
+        Console.CancelKeyPress += new ConsoleCancelEventHandler(OnCancelKeyPress);
+        
         // Grabbing game process
         Console.WriteLine("Grabbing game process");
         Process gameProcess = GetGameProcess();
@@ -64,36 +105,20 @@ class Program
         Console.WriteLine("The Last of Us Part 2 Remastered - Dev Menu");
         Console.WriteLine("Press F1 to toggle Dev Menu");
         Console.WriteLine("Press F2 to toggle Quick Menu");
-        Console.WriteLine("Press ESC to exit\n");
+        Console.WriteLine("You can either press CTRL + C while focused on this window to close the unlocker or just close the program.");
         // Create mod toggle handlers for each mod
         // 1: Toggle Dev Menu
-        ModToggleHandler devMenu = new ModToggleHandler(memoryEditor, menuPointer, 0x80);
+        _devMenu = new ModToggleHandler(memoryEditor, menuPointer, 0x80);
         // 2: Toggle Quick Menu
-        ModToggleHandler quickDevMenu = new ModToggleHandler(memoryEditor, menuPointer, 0x78);
+        _quickDevMenu = new ModToggleHandler(memoryEditor, menuPointer, 0x78);
         
-        bool running = true;
         while (running)
         {
-            // Revert changes and stop this program from running
-            if ((Win32Api.GetAsyncKeyState(Constants.VK_ESC) & 0x8000) != 0)
-            {
-                if (devMenu.IsEnabled)
-                {
-                    devMenu.Toggle();
-                }
-                if (quickDevMenu.IsEnabled)
-                {
-                    quickDevMenu.Toggle();
-                }
-                running = false;
-                continue;
-            }
-
             // Enable/Disable Dev Menu
             if ((Win32Api.GetAsyncKeyState(Constants.VK_F1) & 0x8000) != 0)
             {
-                devMenu.Toggle();
-                string status = devMenu.IsEnabled ? "ENABLED" : "DISABLED";
+                _devMenu.Toggle();
+                string status = _devMenu.IsEnabled ? "ENABLED" : "DISABLED";
                 Console.WriteLine($"Dev Menu: {status}");
                 Thread.Sleep(Constants.KEY_DELAY_MS);
             }
@@ -101,8 +126,8 @@ class Program
             // Enable/Disable Quick Dev Menu
             if ((Win32Api.GetAsyncKeyState(Constants.VK_F2) & 0x8000) != 0)
             {
-                quickDevMenu.Toggle();
-                string status = quickDevMenu.IsEnabled ? "ENABLED" : "DISABLED";
+                _quickDevMenu.Toggle();
+                string status = _quickDevMenu.IsEnabled ? "ENABLED" : "DISABLED";
                 Console.WriteLine($"Quick Menu: {status}");
                 Thread.Sleep(Constants.KEY_DELAY_MS);
             }
